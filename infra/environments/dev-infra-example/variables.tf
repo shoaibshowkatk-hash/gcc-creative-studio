@@ -125,3 +125,10 @@ variable "apis_to_enable" {
     "run.googleapis.com"               # Required for Cloud Run
   ]
 }
+
+variable "create_github_repository_resource" {
+  type        = bool
+  description = "Whether to create the google_cloudbuildv2_repository resource or use the existing one."
+  default     = true
+}
+
