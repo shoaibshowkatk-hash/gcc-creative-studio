@@ -78,7 +78,13 @@ done
 
 # 4. Setup Environment and run Python Seeding Script
 CURRENT_USER=$(gcloud config get-value account 2>/dev/null || echo "system")
-ASSET_BUCKET_NAME="${GCP_PROJECT_ID}-cs-development-bucket"
+ENV_NAME=${ENV_NAME:-"development"}
+if [ "$ENV_NAME" = "dev-infra" ]; then
+    ENV_VAL="development"
+else
+    ENV_VAL="$ENV_NAME"
+fi
+ASSET_BUCKET_NAME="${GCP_PROJECT_ID}-cs-${ENV_VAL}-bucket"
 
 export GOOGLE_CLOUD_PROJECT=$GCP_PROJECT_ID
 export ADMIN_USER_EMAIL=$CURRENT_USER

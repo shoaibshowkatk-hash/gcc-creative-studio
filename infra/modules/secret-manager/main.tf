@@ -18,7 +18,7 @@ resource "google_secret_manager_secret" "this" {
   for_each = toset(var.secret_names) # Loop over the list of names
 
   project   = var.gcp_project_id
-  secret_id = each.key # Use the name from the list as the secret_id
+  secret_id = "${each.key}-${var.environment}" # Use the name from the list as the secret_id
 
   replication {
     auto {}

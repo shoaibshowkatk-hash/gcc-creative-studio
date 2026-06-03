@@ -26,3 +26,8 @@ variable "accessor_sa_email" {
   type        = string
   description = "The email of the service account that will be granted accessor permission."
 }
+
+variable "environment" {
+  type        = string
+  description = "The environment name (e.g., dev-infra, emea-dev)."
+}

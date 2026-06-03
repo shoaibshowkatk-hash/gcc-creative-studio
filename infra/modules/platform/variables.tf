@@ -49,6 +49,11 @@ variable "github_conn_name" { type = string }
 variable "github_repo_owner" { type = string }
 variable "github_repo_name" { type = string }
 variable "github_branch_name" { type = string }
+variable "github_conn_region" {
+  type        = string
+  description = "The region of the GitHub connection."
+  default     = ""
+}
 
 variable "be_cpu" {
   type = string
@@ -86,4 +91,10 @@ variable "backend_runtime_secrets" {
   type        = map(string)
   description = "Secrets to mount in the backend container at runtime."
   default     = {}
+}
+
+variable "create_github_repository_resource" {
+  type        = bool
+  description = "Whether to create the google_cloudbuildv2_repository resource or use the existing one."
+  default     = true
 }

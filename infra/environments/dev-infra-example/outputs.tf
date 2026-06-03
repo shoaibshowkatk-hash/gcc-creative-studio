@@ -19,12 +19,12 @@ output "gcp_project_id" {
 
 output "frontend_secrets" {
   description = "A list of frontend secret names."
-  value       = var.frontend_secrets
+  value       = [for s in var.frontend_secrets : "${s}-${var.environment}"]
 }
 
 output "backend_secrets" {
   description = "A list of backend secret names."
-  value       = var.backend_secrets
+  value       = [for s in var.backend_secrets : "${s}-${var.environment}"]
 }
 
 output "cloud_sql_connection_name" {

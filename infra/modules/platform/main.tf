@@ -70,11 +70,17 @@ locals {
 
 
 # --- Cloud Build Repository Connection ---
+locals {
+  github_region = var.github_conn_region != "" ? var.github_conn_region : var.gcp_region
+  source_repository_id = var.create_github_repository_resource ? google_cloudbuildv2_repository.source_repo[0].id : "projects/${var.gcp_project_id}/locations/${local.github_region}/connections/${var.github_conn_name}/repositories/${var.github_repo_name}"
+}
+
 resource "google_cloudbuildv2_repository" "source_repo" {
+  count             = var.create_github_repository_resource ? 1 : 0
   provider          = google-beta
   name              = var.github_repo_name
-  location          = var.gcp_region
-  parent_connection = "projects/${var.gcp_project_id}/locations/${var.gcp_region}/connections/${var.github_conn_name}"
+  location          = local.github_region
+  parent_connection = "projects/${var.gcp_project_id}/locations/${local.github_region}/connections/${var.github_conn_name}"
   remote_uri        = "https://github.com/${var.github_repo_owner}/${var.github_repo_name}.git"
 }
 
@@ -123,10 +129,12 @@ module "backend_service" {
   cloudbuild_yaml_path  = "backend/cloudbuild.yaml"
   included_files_glob   = ["backend/**"]
   container_env_vars    = local.backend_env_vars
-  runtime_secrets = var.backend_runtime_secrets
+  runtime_secrets = {
+    for k, v in var.backend_runtime_secrets : k => "${v}-${var.environment}"
+  }
   custom_audiences      = var.backend_custom_audiences
   scaling_min_instances = 1
-  source_repository_id = google_cloudbuildv2_repository.source_repo.id
+  source_repository_id = local.source_repository_id
   cpu = var.be_cpu
   memory = var.be_memory
   build_substitutions   = merge(var.be_build_substitutions,
@@ -156,7 +164,7 @@ resource "google_firebase_project" "default" {
 module "frontend_service" {
   source = "../firebase-hosting-service"
 
-  source_repository_id = google_cloudbuildv2_repository.source_repo.id
+  source_repository_id = local.source_repository_id
   gcp_project_id       = var.gcp_project_id
   gcp_region            = var.gcp_region
   firebase_project_id  = google_firebase_project.default.project
@@ -185,6 +193,7 @@ module "frontend_secrets" {
   source = "../secret-manager"
 
   gcp_project_id    = var.gcp_project_id
+  environment       = var.environment
   secret_names      = var.frontend_secrets
   accessor_sa_email = module.frontend_service.trigger_sa_email
 }
@@ -193,6 +202,7 @@ module "backend_secrets" {
   source = "../secret-manager"
 
   gcp_project_id    = var.gcp_project_id
+  environment       = var.environment
   secret_names      = var.backend_secrets
   accessor_sa_email = module.backend_service.trigger_sa_email
 }

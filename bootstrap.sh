@@ -706,7 +706,10 @@ seed_data() {
     pushd "$REPO_ROOT" > /dev/null
 
     # 1. Manually construct the CORRECT asset bucket name
-    local ASSET_BUCKET_NAME="${GCP_PROJECT_ID}-cs-development-bucket"
+    local TFVARS_FILE_PATH="$REPO_ROOT/infra/environments/$ENV_NAME/$ENV_NAME.tfvars"
+    local ENV_VAL=$(grep 'environment[[:space:]]*=' "$TFVARS_FILE_PATH" | awk -F'"' '{print $2}')
+    ENV_VAL=${ENV_VAL:-$ENV_NAME}
+    local ASSET_BUCKET_NAME="${GCP_PROJECT_ID}-cs-${ENV_VAL}-bucket"
     success "Using asset bucket: gs://${ASSET_BUCKET_NAME}"
 
     info "Setting bootstrap script environment variables..."
@@ -760,8 +763,13 @@ trigger_builds() {
     step 14 "Triggering Initial Builds"; cd "$REPO_ROOT"
     prompt "Would you like to trigger the initial builds for the frontend and backend now? (y/n)"; read -r REPLY < /dev/tty
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then info "You can trigger the builds manually later by pushing a commit or via the Cloud Build UI."; return; fi
-    info "Triggering backend build..."; gcloud builds triggers run "${BE_SERVICE_NAME}-trigger" --branch="$GITHUB_BRANCH" --project="$GCP_PROJECT_ID" --region="us-central1"
-    info "Triggering frontend build..."; gcloud builds triggers run "$GCP_PROJECT_ID-trigger" --branch="$GITHUB_BRANCH" --project $GCP_PROJECT_ID --region="us-central1"
+    local TFVARS_FILE_PATH="$REPO_ROOT/infra/environments/$ENV_NAME/$ENV_NAME.tfvars"
+    local GCP_REGION=$(grep 'gcp_region' "$TFVARS_FILE_PATH" | awk -F'"' '{print $2}')
+    GCP_REGION=${GCP_REGION:-"us-central1"}
+    local BE_SVC_NAME=$(grep 'backend_service_name' "$TFVARS_FILE_PATH" | awk -F'"' '{print $2}')
+    BE_SVC_NAME=${BE_SVC_NAME:-"cstudio-be"}
+    info "Triggering backend build..."; gcloud builds triggers run "${BE_SVC_NAME}-trigger" --branch="$GITHUB_BRANCH" --project="$GCP_PROJECT_ID" --region="$GCP_REGION"
+    info "Triggering frontend build..."; gcloud builds triggers run "$GCP_PROJECT_ID-trigger" --branch="$GITHUB_BRANCH" --project "$GCP_PROJECT_ID" --region="$GCP_REGION"
 
     success "Builds have been triggered."; info "You can monitor their progress in the Cloud Build console:"; echo -e "   ${C_YELLOW}https://console.cloud.google.com/cloud-build/builds?project=${GCP_PROJECT_ID}${C_RESET}"
 }

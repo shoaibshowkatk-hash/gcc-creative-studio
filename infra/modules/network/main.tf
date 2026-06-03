@@ -34,7 +34,7 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 resource "google_compute_global_address" "private_ip_address" {
-  name          = "cs-private-ip-address"
+  name          = "cs-private-ip-address-${var.environment}"
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 16
